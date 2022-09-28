@@ -1,0 +1,472 @@
+library(Signac)
+library(Seurat)
+library(GenomeInfoDb)
+library(EnsDb.Mmusculus.v79)
+library(BSgenome.Mmusculus.UCSC.mm10)
+library(ggplot2)
+library(patchwork)
+library(GenomicRanges)
+library(future)
+library(SingleR)
+library(dplyr)
+library(ggpubr)
+library(JASPAR2020)
+library(TFBSTools)
+library(TxDb.Mmusculus.UCSC.mm10.knownGene)
+library(ChIPseeker)
+library(org.Mm.eg.db)
+library(motifmatchr)
+library(openxlsx)
+
+
+
+set.seed(1234)
+
+wrk_dir      = '/cluster/projects/mcgahalab/data/brookslab/sabelo/2022_03_scATAC/'
+in_dir       = 'resources/scATAC_data'
+prev_out_dir = 'results'
+out_dir      = 'results_v2'
+bsgenome     = BSgenome.Mmusculus.UCSC.mm10
+
+setwd(wrk_dir)
+
+gtf_file = '/cluster/projects/mcgahalab/ref/genomes/mouse/GRCm38/GTF/genome.gtf'
+# get motif information from JASPAR2020
+pfm      = getMatrixSet(x=JASPAR2020, opts=list(collection="CORE", species='Mus musculus'))
+
+
+# read clean data in
+clean_seurs_ls = readRDS(file=file.path(prev_out_dir, 'seurat_object', '07_clean_seurs_list.rds'))
+
+
+###################################################
+#### cluster cells using peak counts (called using MACS2)
+resols = seq(.1, 1.3, .2)
+clust_seurs_ls = NULL
+for (x in c('cre', 'KOWT')) {
+   DefaultAssay(clean_seurs_ls[[x]]) = 'peaks'
+   
+   # remove columns related to old clustering (new to recluster after removing doublets)
+   rm_col = grep('peaks_snn_res|seurat_clusters|immgen_res', names(clean_seurs_ls[[x]]@meta.data))
+   clean_seurs_ls[[x]]@meta.data = clean_seurs_ls[[x]]@meta.data[, -rm_col] # remove all clustering columns
+
+   # clustering
+   clust_seurs_ls[[x]] = FindNeighbors(object=clean_seurs_ls[[x]], reduction='integrated_lsi', dims=2:30)
+   clust_seurs_ls[[x]] = FindClusters(object=clust_seurs_ls[[x]], algorithm=3, resolution=resols)
+   print(paste("*****", date(), x, 'clustering done!'))
+}
+saveRDS(clust_seurs_ls, file.path(out_dir, 'seurat_object', '08_seurs_list_clustered.rds'))
+
+
+################################
+#### add motif information to CD8 T cells and annotate their cell types using gene activity and plot all resolutions
+bed.se = readRDS("/cluster/projects/mcgahalab/ref/scrna/scRNAseq_datasets/immgen.rds") 
+anno_types = c('label.main', 'label.fine')
+annot_seurs_ls = clust_seurs_ls
+for (x in c('cre', 'KOWT')) {
+   DefaultAssay(annot_seurs_ls[[x]]) = 'gene_activity'
+   for (resol in resols) {
+      for (anno_type in anno_types) {
+         immgen_anno <- SingleR(test=GetAssayData(annot_seurs_ls[[x]]), ref=bed.se, 
+                                assay.type.test=1, labels=bed.se[[anno_type]],
+                                clusters=annot_seurs_ls[[x]]@meta.data[, paste0('peaks_snn_res.', resol)])   
+         
+         cluster_ids <- setNames(immgen_anno$labels, 
+                                 as.character(rownames(immgen_anno)))
+         annot_seurs_ls[[x]]@meta.data[, paste0('immgen_res_', resol, '_', anno_type)] <- cluster_ids[as.character(annot_seurs_ls[[x]]@meta.data[, paste0('peaks_snn_res.', resol)])]
+         print(paste("*****", date(), 'Resolution', resol, anno_type, x, 'done!'))
+      }
+   }
+   DefaultAssay(annot_seurs_ls[[x]]) = 'peaks'
+   # add motif information
+   annot_seurs_ls[[x]] = AddMotifs(object=annot_seurs_ls[[x]], genome=bsgenome, pfm=pfm)
+}
+saveRDS(annot_seurs_ls, file.path(out_dir, 'seurat_object', '09_seurs_list_clustered_n_annotated.rds'))
+
+
+
+# UMAP all resolutions split by sample
+# downsample cells to have the same nb of cells in WT and KO
+pdf(file.path(out_dir, 'UMAP_all_resol.pdf'), width=13, height=4)
+for (x in c('cre', 'KOWT')) {
+   DefaultAssay(clust_seurs_ls[[x]]) = 'gene_activity'
+   min_sample_size = min(table(annot_seurs_ls[[x]]$group))
+   sub_sampled = subset(x=annot_seurs_ls[[x]], downsample=min_sample_size) 
+   sub_sampled
+   
+   for (resol in resols) {
+      # print with number cell labels
+      p1 = DimPlot(sub_sampled, reduction='umap', group.by=paste0('peaks_snn_res.', resol), 
+                   label=T, repel=T, label.size=3, pt.size=2, shuffle=T) +
+         ggtitle(paste(x, 'samples - Cluster #, Res:', resol)) +
+         theme(plot.title=element_text(size=11), legend.text=element_text(size=6)) +
+         guides(color=guide_legend(override.aes=list(size=2), keywidth=.2, keyheight=.6, ncol=1) )
+      p1$layers[[1]]$aes_params$alpha = 0.6
+      p2 = DimPlot(sub_sampled, reduction='umap', split.by='group', group.by=paste0('peaks_snn_res.', resol), 
+                   label=T, repel=T, label.size=3, pt.size=2, shuffle=T) + NoLegend() + ggtitle(NULL)  
+      p2$layers[[1]]$aes_params$alpha = 0.6
+      print(ggarrange(p1, p2, ncol=2, nrow=1, widths=c(1.5, 4))) #c(1.7, 2.5)))
+      
+      # print with main cell type
+      p3 = DimPlot(sub_sampled, reduction='umap', group.by=paste0('immgen_res_', resol, '_label.main'), 
+                   label=T, repel=T, label.size=2, pt.size=2, shuffle=T) +
+         ggtitle(paste(x, 'samples - Main label, Res:', resol)) +
+         theme(plot.title=element_text(size=11), legend.text=element_text(size=4)) +
+         guides(color=guide_legend(override.aes=list(size=2), keywidth=.2, keyheight=.6, ncol=1) )
+      p3$layers[[1]]$aes_params$alpha = 0.6
+      p4 = DimPlot(sub_sampled, reduction='umap', split.by='group', group.by=paste0('immgen_res_', resol, '_label.main'), 
+                   label=T, repel=T, label.size=2, pt.size=2, shuffle=T) + NoLegend() + ggtitle(NULL)  
+      p4$layers[[1]]$aes_params$alpha = 0.6
+      print(ggarrange(p3, p4, ncol=2, nrow=1, widths=c(1.5, 4))) #c(1.7, 2.5)))
+      
+      # print with fine cell type
+      p5 = DimPlot(sub_sampled, reduction='umap', group.by=paste0('immgen_res_', resol, '_label.fine'), 
+                   label=T, repel=T, label.size=2, pt.size=2, shuffle=T) +
+         ggtitle(paste(x, 'samples - Fine label, Res:', resol)) +
+         theme(plot.title=element_text(size=11), legend.text=element_text(size=4)) +
+         guides(color=guide_legend(override.aes=list(size=2), keywidth=.2, keyheight=.6, ncol=1) )
+      p5$layers[[1]]$aes_params$alpha = 0.6
+      p6 = DimPlot(sub_sampled, reduction='umap', split.by='group', group.by=paste0('immgen_res_', resol, '_label.fine'), 
+                   label=T, repel=T, label.size=2, pt.size=2, shuffle=T) + NoLegend() + ggtitle(NULL)  
+      p6$layers[[1]]$aes_params$alpha = 0.6
+      print(ggarrange(p5, p6, ncol=2, nrow=1, widths=c(1.7, 4))) #c(1.7, 2.5)))
+   }
+}
+dev.off()
+print('***umap_all_resot_split_by_sample done***')
+
+
+##################################################
+##### Find active genes characterizing each cluster, and draw a heatmap of top 20/10 and botttom 20/10 active gene markers per cluster
+anno_types = c('peaks_snn', 'label.main', 'label.fine')
+resol = 0.5
+for (x in c('cre', 'KOWT')) {
+   for (anno_type in anno_types) {
+      file_suffix = ifelse(anno_type=='peaks_snn', 'cluster_nb', ifelse(anno_type=='label.main', 'main_label', 'fine_label'))
+      # for (i in 1:length(resols)) {
+      i = 1
+      this_ident  = ifelse(anno_type=='peaks_snn', paste0(anno_type, '_res.', resol), 
+                           paste0('immgen_res_', resol, '_', anno_type))
+      Idents(annot_seurs_ls[[x]]) = this_ident
+      rna_markers        = FindAllMarkers(annot_seurs_ls[[x]], assay="gene_activity")
+      rna_markers$avg_FC  = (2^rna_markers$avg_log2FC)
+      rna_markers = rna_markers[, c('gene', 'cluster', 'avg_FC', 'avg_log2FC', 'p_val', 'p_val_adj', 'pct.1', 'pct.2')]
+      rna_markers = data.frame(resolution=resol, rna_markers)
+
+      
+      top_nbs     = c(10, 20)
+      pdf_heights = c(25, 45)
+      for (j in 1:length(top_nbs)) {
+         top_nb = top_nbs[j]
+         pdf(file.path(out_dir, paste0('Heatmap_gene_activity_top_', top_nb, '_', file_suffix, '_', x, '.pdf')), height=pdf_heights[j])
+         Idents(annot_seurs_ls[[x]]) = ifelse(anno_type=='peaks_snn', paste0(anno_type, '_res.', resol), 
+                                              paste0('immgen_res_', resol, '_', anno_type))
+         rna_markers %>%
+            group_by(cluster) %>%
+            top_n(n=top_nb, wt=avg_log2FC) -> top_markers
+         p1 = DoHeatmap(annot_seurs_ls[[x]], features=unique(top_markers$gene), assay="gene_activity", angle=90) +
+            theme(text = element_text(size = 13), title=element_text(size=11)) + NoLegend() + 
+            ggtitle(paste0(x, ' samples, Res: ', resol, ', Top ', top_nb, ' up-regulated gene activity markers'))
+         print(p1)
+         
+         rna_markers %>%
+            group_by(cluster) %>%
+            top_n(n=-top_nb, wt=avg_log2FC) -> bottom_markers
+         p2 = DoHeatmap(annot_seurs_ls[[x]], features=unique(bottom_markers$gene), assay="gene_activity", angle=90) +
+            theme(text = element_text(size = 13), title=element_text(size=11)) + NoLegend() +
+            ggtitle(paste0(x, ' samples, Res: ', resol, ', Top ', top_nb, ' down-regulated gene activity markers'))
+         print(p2)
+         dev.off()
+      }
+      write.csv(rna_markers, file=file.path(out_dir, paste0('gene_activity_markers_', file_suffix, '_', x,'.csv')), row.names=F)
+   }
+}
+
+
+
+###############################################
+# perfrom ChromVAR analysis to identify motifs associated with variability in chromatin accessibility between cells
+# get motif information from JASPAR2020
+anno_type = 'peaks_snn'
+resol = 0.5
+for (x in c('cre', 'KOWT')) {
+   DefaultAssay(annot_seurs_ls[[x]]) = 'peaks'
+
+   # Get mapping of JASPAR motif id to name
+   motif_names <- GetMotifData(object=annot_seurs_ls[[x]], assay='peaks', slot="motif.names")
+   
+   annot_seurs_ls[[x]] <- RunChromVAR(
+      object = annot_seurs_ls[[x]],
+      genome = bsgenome
+   )
+   DefaultAssay(annot_seurs_ls[[x]]) <- 'chromvar'
+
+   diff_activity = NULL
+   file_suffix   = ifelse(anno_type=='peaks_snn', 'cluster_nb', ifelse(anno_type=='label.main', 'main_label', 'fine_label'))
+   clust_col     = ifelse(anno_type=='peaks_snn', paste0('peaks_snn_res.', resol), paste0('immgen_res_', resol, '_', anno_type))
+   clusts        = sort(as.character(unique(annot_seurs_ls[[x]]@meta.data[, clust_col])))
+   clusts        = c(clusts, 'bulk')
+   annot_seurs_ls[[x]]$group_clust = paste0(annot_seurs_ls[[x]]$group, '_C.', annot_seurs_ls[[x]]@meta.data[, clust_col])
+   for (i in 1:length(clusts)) {
+      clust   = clusts[i]
+      print(paste(x, anno_type, clust, 'start'))
+      clust_1 = paste0(ifelse(x %in% c('all', 'cre'), 'CD8_cre_pos', 'IRF2_KO'), ifelse(clust=='bulk', '', paste0('_C.', clust)))
+      clust_2 = paste0(ifelse(x %in% c('all', 'cre'), 'CD8_cre_neg', 'WT'), ifelse(clust=='bulk', '', paste0('_C.', clust)))
+      if (clust == 'bulk') {
+         cells_1 = Cells(subset(annot_seurs_ls[[x]], group==clust_1))
+         cells_2 = Cells(subset(annot_seurs_ls[[x]], group==clust_2))
+      } else {
+         cells_1 = Cells(subset(annot_seurs_ls[[x]], group_clust==clust_1))
+         cells_2 = Cells(subset(annot_seurs_ls[[x]], group_clust==clust_2))
+      }
+      if (length(cells_1)<30 | length(cells_2)<30) next
+      
+      Idents(annot_seurs_ls[[x]]) = ifelse(clust=='bulk', 'group', 'group_clust')
+      temp_diff_activity <- FindMarkers(
+         object = annot_seurs_ls[[x]],
+         ident.1 = clust_1,
+         ident.2 = clust_2,
+         min.pct = 0.05,
+         mean.fxn = rowMeans,
+         fc.name = "avg_diff"
+      )
+      mots      = row.names(temp_diff_activity)
+      mots_name = unlist(sapply(mots, function(mot) motif_names[mot]))
+      diff_activity[[i]] = data.frame(motif=mots, TF=mots_name, label=file_suffix, clust_1=clust_1, 
+                                      clust_2=clust_2, resol=resol, temp_diff_activity, row.names=NULL)
+      #diff_activity[[i]] = diff_activity[[i]][diff_activity[[i]]$p_val_adj<0.05, ]
+      print(paste(x, anno_type, clust, 'done'))
+   }
+   names(diff_activity) = clusts
+   names(diff_activity)[-length(diff_activity)] = paste('Clust', names(diff_activity)[-length(diff_activity)])
+   write.xlsx(diff_activity, file = file.path(out_dir, paste0('ChromVAR_motif_differential_activity_', x, '.xlsx')))
+   
+   diff_activity = do.call(rbind, diff_activity)
+   write.csv(diff_activity, file=file.path(out_dir, paste0('ChromVAR_motif_diff_activity_', x, '.csv')), row.names=F)
+   print(paste(anno_type, 'done!'))
+   
+}
+
+
+
+
+#######################################
+#### Find differentially accessible peaks between clusters
+anno_types  = c('peaks_snn')
+for (x in c('cre', 'KOWT')) {
+   DefaultAssay(annot_seurs_ls[[x]]) <- 'peaks'
+   da_peaks = NULL
+   for (anno_type in anno_types) {
+      file_suffix = ifelse(anno_type=='peaks_snn', 'cluster_nb', ifelse(anno_type=='label.main', 'main_label', 'fine_label'))
+      clust_col   = ifelse(anno_type=='peaks_snn', paste0('peaks_snn_res.', resol), paste0('immgen_res_', resol, '_', anno_type))
+      clusts      = sort(as.character(unique(annot_seurs_ls[[x]]@meta.data[, clust_col])))
+      clusts      = c(clusts, 'bulk')
+      annot_seurs_ls[[x]]$group_clust = paste0(annot_seurs_ls[[x]]$group, '_C.', annot_seurs_ls[[x]]@meta.data[, clust_col])
+      for (i in 1:length(clusts)) {
+         clust   = clusts[i]
+         print(paste(x, anno_type, clust, 'start'))
+         clust_1 = paste0(ifelse(x %in% c('all', 'cre'), 'CD8_cre_pos', 'IRF2_KO'), ifelse(clust=='bulk', '', paste0('_C.', clust)))
+         clust_2 = paste0(ifelse(x %in% c('all', 'cre'), 'CD8_cre_neg', 'WT'), ifelse(clust=='bulk', '', paste0('_C.', clust)))
+         if (clust == 'bulk') {
+            cells_1 = Cells(subset(annot_seurs_ls[[x]], group==clust_1))
+            cells_2 = Cells(subset(annot_seurs_ls[[x]], group==clust_2))
+         } else {
+            cells_1 = Cells(subset(annot_seurs_ls[[x]], group_clust==clust_1))
+            cells_2 = Cells(subset(annot_seurs_ls[[x]], group_clust==clust_2))
+         }
+         if (length(cells_1)<30 | length(cells_2)<30) next
+         
+         Idents(annot_seurs_ls[[x]]) = ifelse(clust=='bulk', 'group', 'group_clust')
+         temp_da_peaks <- FindMarkers(
+            object = annot_seurs_ls[[x]],
+            ident.1 = clust_1,
+            ident.2 = clust_2,
+            min.pct = 0.05,
+            test.use = 'LR',
+            latent.vars = 'peak_region_fragments')
+         temp_da_peaks = data.frame(peaks=row.names(temp_da_peaks), label=file_suffix, clust_1=clust_1, 
+                                    clust_2=clust_2, resol=resol, temp_da_peaks, row.names=NULL)
+         closest_genes = ClosestFeature(annot_seurs_ls[[x]], regions=temp_da_peaks$peaks)
+         temp_da_peaks = cbind(temp_da_peaks, closest_genes[, c('gene_name', 'gene_biotype', 'type', 'closest_region', 'distance')])
+         
+         da_peaks = rbind(da_peaks, temp_da_peaks)
+         if (x=='all') {
+            clust_1 = paste0('IRF2_KO', ifelse(clust=='bulk', '', paste0('_C.', clust)))
+            clust_2 = paste0('WT', ifelse(clust=='bulk', '', paste0('_C.', clust)))
+            Idents(annot_seurs_ls[[x]]) = ifelse(clust=='bulk', 'group', 'group_clust')
+            temp_da_peaks <- FindMarkers(
+               object = annot_seurs_ls[[x]],
+               ident.1 = clust_1,
+               ident.2 = clust_2,
+               min.pct = 0.05,
+               test.use = 'LR',
+               latent.vars = 'peak_region_fragments')
+            temp_da_peaks = data.frame(peaks=row.names(temp_da_peaks), label=file_suffix, clust_1=clust_1, 
+                                       clust_2=clust_2, resol=resol, temp_da_peaks, row.names=NULL)
+            closest_genes = ClosestFeature(annot_seurs_ls[[x]], regions=temp_da_peaks$peaks)
+            temp_da_peaks = cbind(temp_da_peaks, closest_genes[, c('gene_name', 'gene_biotype', 'type', 'closest_region', 'distance')])
+            
+            da_peaks = rbind(da_peaks, temp_da_peaks)
+         }
+         print(paste(x, anno_type, clust, 'done'))
+      }
+   }
+   
+   write.csv(da_peaks, file=file.path(out_dir, paste0('da_peaks_', x, '.csv')), row.names=F)
+   print(paste(anno_type, 'done!'))
+}
+
+
+
+####################################################
+#### Annotate the genes and motifs within each DA peak
+# Make TxDB file from GTF
+txdb <- makeTxDbFromGFF(file=gtf_file, format="gtf")
+# Creating mapping of Gene Ensembl to SYMBOLs
+txby <- keys(org.Mm.eg.db, 'ENSEMBL')
+gene_ids <- mapIds(org.Mm.eg.db, keys=txby, column='SYMBOL',
+                   keytype='ENSEMBL', multiVals="first")
+# Add motif information from JASPAR2020
+pfm <- getMatrixSet(x=JASPAR2020,
+                    opts=list(collection="CORE", species='Mus musculus'))
+for (x in c('cre', 'KOWT')) {
+   da_peaks    = read.csv(file=file.path(out_dir, paste0('da_peaks_', x, '.csv')))
+   da_peaks_ls = split(da_peaks, da_peaks$clust_1)
+
+   print(paste(x, 'samples'))
+   print('.')
+   da_peaks_anno_ls <- lapply(da_peaks_ls, function(da_i){
+      print(".")
+      if(is.null(da_i)) return(NULL)
+      da_i$chr <- gsub("-.*$", "", da_i$peaks)
+      da_i$start <- gsub("^.*-(.*)-.*$", "\\1", da_i$peaks)
+      da_i$end <- gsub("^.*-", "", da_i$peaks)
+      da_gr <- makeGRangesFromDataFrame(da_i, keep.extra.columns=T)
+      seqlevelsStyle(da_gr) <- 'NCBI'
+
+      # Annotate the genomic features of differential accessible regions
+      anno <- annotatePeak(da_gr, TxDb=txdb, tssRegion = c(-3000, 3000), level='gene',
+                           genomicAnnotationPriority = c("Promoter", "5UTR", "3UTR", "Exon",
+                                                         "Intron", "Downstream", "Intergenic"))
+      anno_gr <- anno@anno
+      anno_df = data.frame(anno_gr)
+      anno_df$avg_FC = 2^anno_df$avg_log2FC
+      names(anno_df)[c(16, 21)] = c('closest_gene', 'peak_annotation')
+      anno_df = anno_df[, c('peaks', 'avg_FC', 'pct.1', 'pct.2', 'p_val_adj', 'closest_gene', 'peak_annotation', 
+                      'label', 'clust_1', 'clust_2', 'resol', 'avg_log2FC')]
+      anno_df = anno_df[anno_df$p_val_adj<0.05, ]
+      
+      anno_df$peak_annotation = gsub("Exon (.*)$", "Exon", anno_df$peak_annotation)
+      anno_df$peak_annotation = gsub("Intron (.*)$", "Intron", anno_df$peak_annotation)
+      anno_df$peak_annotation = gsub("Promoter (.*)$", "Promoter", anno_df$peak_annotation)
+      anno_df
+   })
+
+   names(da_peaks_anno_ls) = names(da_peaks_ls)
+   names(da_peaks_anno_ls)[1]  = 'bulk'
+   names(da_peaks_anno_ls)[-1] = paste('Clust', sub("(.+)_C.", '', names(da_peaks_ls)[-1]))
+   
+   write.xlsx(da_peaks_anno_ls, file = file.path(out_dir, paste0('da_peaks_annot_', x, '.xlsx')))
+}
+
+
+
+#############################################
+#### visualize cluster proportions
+p = NULL
+for (x in c('cre', 'KOWT')) {
+   seur = annot_seurs_ls[[x]]
+   clusters_prct = data.frame(table(seur$group, seur$peaks_snn_res.0.5))
+   names(clusters_prct) = c('sample', 'cluster', 'cells_nb')
+   total = clusters_prct %>%
+      group_by(sample) %>%
+      summarize(total_cells=sum(cells_nb))
+   clusters_prct = merge(clusters_prct, total)
+   clusters_prct$percentage = round(clusters_prct$cells_nb / clusters_prct$total_cells * 100, 1)
+   
+   p[[x]] = ggplot(clusters_prct, aes(x=sample, y=percentage, fill=cluster)) +
+      geom_bar(stat='identity', width=0.7) +
+      ggtitle('Res 0.5') + xlab('') + theme_bw() +
+      theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1))
+}
+p = p[['cre']] + p[['KOWT']]
+ggsave(file.path(out_dir, 'barplot_cluster_percentages.pdf'), p, height=3, width=5)
+
+
+
+#############################################
+#### visualize da_peaks
+for (x in c('cre', 'KOWT')) {
+   da_peaks   = read.xlsx(file.path(out_dir, paste0('da_peaks_annot_', x, '.xlsx')), sheet='bulk')
+   incr_peaks = da_peaks[da_peaks$avg_log2FC>0, ]
+   decr_peaks = da_peaks[da_peaks$avg_log2FC<0, ]
+   incr_peaks = data.frame(table(incr_peaks$peak_annotation), incr_decr_access='increased')
+   decr_peaks = data.frame(table(decr_peaks$peak_annotation), incr_decr_access='decreased')
+   da_peaks = rbind(incr_peaks, decr_peaks)
+   names(da_peaks)[1] = 'region_type'
+   da_peaks$incr_decr_access = factor(da_peaks$incr_decr_access, levels=c('increased', 'decreased'))
+   p = ggplot(da_peaks, aes(x=region_type, y=Freq, fill=incr_decr_access)) +
+      geom_bar(stat="identity", color='black', size=.5, width=.5, position = position_dodge(preserve = "single")) + 
+      theme_bw() +
+      theme(axis.text.x = element_text(angle=45, hjust=1)) +
+      theme(legend.position = c(.83, .91)) +
+      labs(fill='Direction') +
+      xlab('') + ylab('Number of differentially accessible peaks') +
+      ggtitle(paste(x, 'samples'))
+   
+   ggsave(file.path(out_dir, paste0('barplot_da_peaks_', x, '.pdf')), plot=p, width=4, height=6.5)
+}
+
+
+
+
+#############################################
+##### annotate and visualize accessible peaks in each sample
+open_peaks_anno_ls <- lapply(c('cre', 'KOWT'), function(x){
+   seur = annot_seurs_ls[[x]]
+   Idents(seur) = 'group'
+   samples = unique(annot_seurs_ls[[x]]$group)
+   open_peaks = do.call(rbind, lapply(samples, function(spl) {
+      temp = AccessiblePeaks(subset(seur, group==spl), idents=spl)
+      temp = data.frame(ranges=temp)
+      temp$sample = spl
+      temp
+   }))
+
+   print(".")
+   open_peaks_gr <- StringToGRanges(open_peaks$ranges)
+   open_peaks_gr$sample = open_peaks$sample
+   seqlevelsStyle(open_peaks_gr) <- 'NCBI'
+   
+   # Annotate the genomic features of differential accessible regions
+   anno <- annotatePeak(open_peaks_gr, TxDb=txdb, tssRegion = c(-3000, 3000), level='gene',
+                        genomicAnnotationPriority = c("Promoter", "5UTR", "3UTR", "Exon",
+                                                      "Intron", "Downstream", "Intergenic"))
+   anno_gr <- anno@anno
+   anno_df = data.frame(anno_gr)
+   anno_df = anno_df[, c('sample', 'annotation')]
+   names(anno_df)[2] = 'peak_annotation'
+
+   anno_df$peak_annotation = gsub("Downstream (.*)$", "Downstream", anno_df$peak_annotation)
+   anno_df$peak_annotation = gsub("Exon (.*)$", "Exon", anno_df$peak_annotation)
+   anno_df$peak_annotation = gsub("Intron (.*)$", "Intron", anno_df$peak_annotation)
+   anno_df$peak_annotation = gsub("Promoter (.*)$", "Promoter", anno_df$peak_annotation)
+   anno_df
+})
+names(open_peaks_anno_ls) = c('cre', 'KOWT')
+
+for (x in c('cre', 'KOWT')) {
+   temp_ls = split(open_peaks_anno_ls[[x]], factor(open_peaks_anno_ls[[x]]$sample))
+   open_peaks = do.call(rbind, lapply(temp_ls, function(df) {
+      temp = data.frame(table(df$peak_annotation), sample=unique(df$sample))
+      names(temp)[1] = 'region_type'
+      temp
+   }))
+   p = ggplot(open_peaks, aes(x=sample, y=Freq, fill=region_type, group=sample)) +
+      geom_bar(stat="identity", color='black', size=.5, width=.3) + 
+      theme_bw() +
+      theme(axis.text.x = element_text(angle=45, hjust=1)) +
+      scale_fill_brewer(palette = "Set3") +
+      xlab('') + ylab('Number of accessible peaks')
+   ggsave(file.path(out_dir, paste0('barplot_open_peaks_', x, '.pdf')), plot=p, width=4, height=6.5)
+}
