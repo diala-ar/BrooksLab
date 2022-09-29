@@ -1,3 +1,6 @@
+# Identify IRF2 motifs that occur in genes promoter of the mouse genome
+
+
 library(dplyr)
 library(GenomicFeatures)
 library(JASPAR2020)
@@ -11,12 +14,12 @@ library(openxlsx)
 
 
 
-wrk_dir    = '/cluster/projects/mcgahalab/data/brookslab/sabelo/2022_03_scATAC/'
-in_dir     = 'resources/scATAC_data'
-out_dir    = 'results_v2'
+# Define the following variables
+# wrk_dir    # working directory
+# in_dir     # directory containing input files
+# out_dir    # directory where files are saved
 setwd(wrk_dir)
-
-mouse_txdb = '/cluster/projects/mcgahalab/ref/genomes/mouse/GRCm38/GTF/genome.gtf'
+# mouse_txdb # directory containing the gtf file of the mouse GRCm38 genome
 motifs     = list("IRF2"=c('Mus musculus'='MA0051.1', 'Homo sapiens'='MA0051.1'))
 
 

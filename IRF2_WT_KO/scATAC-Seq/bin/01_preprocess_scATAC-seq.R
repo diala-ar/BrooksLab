@@ -1,3 +1,7 @@
+#### Read in peaks data, call peaks using MACS2, perform quality control to remove poor-quality cells and doublets
+#### preprocess data, integrate Cre samples apart and KO and WT apart. annotate cell types
+#### finally remove non-CD8 T cells
+
 library(Signac)
 library(Seurat)
 library(GenomeInfoDb)
@@ -14,19 +18,19 @@ library(ggpubr)
 set.seed(1234)
 
 
-
-wrk_dir    = '/cluster/projects/mcgahalab/data/brookslab/sabelo/2022_03_scATAC/' # working directory
-in_dir     = 'resources/scATAC_data'                                             # directory containing input files
-out_dir    = 'results'
-macs2_path = '/cluster/home/dabdrabb/miniconda3/envs/r413/bin/macs2'             # directory containing MACS2 path
+# Define the following variables
+# wrk_dir    # working directory
+# in_dir     # directory containing input files
+# out_dir    # directory where files are saved
+# macs2_path # directory containing MACS2 path
 setwd(wrk_dir)
 
 groups = c('CD8_cre_pos', 'CD8_cre_neg', 'IRF2_KO', 'WT')
 genome = seqinfo(BSgenome.Mmusculus.UCSC.mm10) # to avoid R searching for genome info on UCSC utl (no internet on server)
 blacklist = blacklist_mm10
-# annotations was created using the following code
-# annotations = GetGRangesFromEnsDb(ensdb = EnsDb.Mmusculus.v79)
-# annotations = renameSeqlevels(annotations, c(paste0("chr", seqlevels(annotations))))
+## annotations was created using the following code
+## annotations = GetGRangesFromEnsDb(ensdb = EnsDb.Mmusculus.v79)
+## annotations = renameSeqlevels(annotations, c(paste0("chr", seqlevels(annotations))))
 annotations = readRDS(file.path('resources', 'ens_Mmusculus_v79_ucsc_annotations.rds'))
 
 
@@ -37,14 +41,14 @@ peaks_ls = lapply(groups, function(group) {
                       col.names = c("chr", "start", "end"))
    gr    = makeGRangesFromDataFrame(peaks)
 })
-# Create a unified set of peaks to quantify in each dataset
+## Create a unified set of peaks to quantify in each dataset
 combined_peaks = reduce(x=c(peaks_ls[[1]], peaks_ls[[2]], peaks_ls[[3]], peaks_ls[[4]]))
-# Filter out bad peaks based on length
+## Filter out bad peaks based on length
 peak_widths    = width(combined_peaks)
 combined_peaks = combined_peaks[peak_widths<10000 & peak_widths>20]
 combined_peaks
 
-# create seurat object
+## create seurat object
 seur_ls = lapply(groups, function(group) {
    metadata = read.csv(
      file = file.path(in_dir, group, "singlecell.csv"),
@@ -54,7 +58,7 @@ seur_ls = lapply(groups, function(group) {
    metadata$group = group
    print(paste(date(), 'read metadata'))
 
-   # assess blacklist regions
+   ## assess blacklist regions
    frag_filename = file.path(in_dir, group, "fragments.tsv.gz")
    frag          = import.bed(frag_filename)
    overlap       = findOverlaps(frag, blacklist)
@@ -69,7 +73,7 @@ seur_ls = lapply(groups, function(group) {
    metadata$blacklist_region_fragments = unlist(blacklist_frags)
    print(paste(date(), 'identified blacklist fragments'))
 
-   # create fragment objects
+   ## create fragment objects
    frags = CreateFragmentObject(
       path = frag_filename,
       cells = rownames(metadata), 
@@ -78,7 +82,7 @@ seur_ls = lapply(groups, function(group) {
    print(paste(date(), 'created fragment object'))
 
 
-   # quantify peaks in fragments
+   ## quantify peaks in fragments
    frag_counts = FeatureMatrix(
       fragments = frags,
       features = combined_peaks,
@@ -103,24 +107,24 @@ seur_ls = lapply(groups, function(group) {
    )
    print(paste(date(), 'create seurat object done'))
 
-   # call peaks using MACS2
+   ## call peaks using MACS2
    peaks_cells = CallPeaks(seur, macs2.path=macs2_path,
                            outdir=file.path(out_dir, "macs2"), 
                            name=group, cleanup=F, format='BEDPE', 
                            effective.genome.size='mm')
    
-   # remove peaks on nonstandard chromosomes and in genomic blacklist regions
+   ## remove peaks on nonstandard chromosomes and in genomic blacklist regions
    peaks = keepStandardChromosomes(peaks_cells, pruning.mode="coarse")
    peaks = subsetByOverlaps(x=peaks, ranges=blacklist, invert=TRUE) #ENCODE blacklist
    print(paste(date(), 'MACS2 done'))
 
-   # quantify counts in each peak
+   ## quantify counts in each peak
    macs2_counts = FeatureMatrix(fragments = Fragments(seur),
                                 features = peaks,
                                 cells = colnames(seur))
 
    print(paste(date(), 'MACS2 counts done'))
-   # create a new assay using the MACS2 peak set and add it to the Seurat object
+   ## create a new assay using the MACS2 peak set and add it to the Seurat object
    seur[['peaks']] = CreateChromatinAssay(counts = macs2_counts,
                                           fragments = Fragments(seur),
                                           annotation = Annotation(seur))
@@ -128,7 +132,7 @@ seur_ls = lapply(groups, function(group) {
    print(paste(date(), 'Added peaks assay done'))
 
 
-   # annotate peaks: extract gene annotations from EnsDb
+   ## annotate peaks: extract gene annotations from EnsDb
    Annotation(seur) = annotations       # add the gene information to the object
    #### compute QC metrics
    seur$pct_reads_in_peaks = seur$nCount_peaks / seur$passed_filters * 100
@@ -298,7 +302,7 @@ print('normalization and other processing steps done!')
 
 
 ##########################
-#### integrate cre samples (CD8_cre_pos/neg) and IRF2_KO with WT (KOWT)
+#### integrate cre samples (CD8_cre_pos/neg) apart and IRF2_KO with WT (KOWT) apart
 #### cell type annotation
 #### add the gene activity matrix to the Seurat object as a new assay and normalize it
 #### annotate cells using 2 types of labels (main and fine labels)
