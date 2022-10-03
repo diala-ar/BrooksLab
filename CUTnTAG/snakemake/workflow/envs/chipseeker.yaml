@@ -1,0 +1,18 @@
+channels:
+  - bioconda
+  - r
+  - conda-forge
+dependencies:
+  - bioconductor-deseq2 =1.30.0
+  - bioconductor-apeglm =1.12.0
+  - bioconductor-chipseeker
+  - bioconductor-org.mm.eg.db
+  - bioconductor-org.hs.eg.db
+  - bioconductor-kegg.db
+  - bioconductor-go.db
+  - bioconductor-clusterprofiler
+  - bioconductor-enrichplot
+  - bioconductor-category
+  - bioconductor-gostats
+  - r-ggplot2
+  - r-ggridges

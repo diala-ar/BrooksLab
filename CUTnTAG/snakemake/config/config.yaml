@@ -1,0 +1,74 @@
+# This file should contain everything to configure the workflow on a global scale.
+# In case of sample based data, it should be complemented by a samples.tsv file that contains
+# one row per sample. It can be parsed easily via pandas.
+samples: "config/samples.tsv"
+units: "config/units.tsv"
+
+common:
+  build: 'GRCm38'
+  genome: '/cluster/projects/mcgahalab/ref/genomes/mouse/GRCm38/genome.fasta'
+  index: '/cluster/projects/mcgahalab/ref/genomes/mouse/GRCm38/genome.fasta.fai'
+  blacklist: '/cluster/projects/mcgahalab/ref/encode/blacklist/grcm38-blacklist.v2.bed.gz'
+  gtf: '/cluster/projects/mcgahalab/ref/genomes/mouse/GRCm38/GTF/genome.gtf'
+  species: "mm"
+
+peakanalyze:
+  promoter_range: 3000
+
+params:
+  trimgalore:
+    #- "--fastqc"
+    - "--illumina"
+    - "--phred33"
+    - "--gzip"
+    #- "--clip_R1 0"
+    #- "--clip_R2 0"
+    #- "--three_prime_clip_R1 0"
+    #- "--three_prime_clip_R2 0"
+  bowtie2:
+    genome: '/cluster/projects/mcgahalab/ref/genomes/mouse/GRCm38/bowtie2Index/genome'
+    spikein: '/cluster/projects/mcgahalab/ref/genomes/ecoli/MG1655/bowtie2Index/sequence'
+    extra:
+      - '--local'
+      - '--very-sensitive'
+      - '--no-mixed'
+      - '--no-discordant'
+      - '--phred33'
+      - '-I 10'
+      - '-X 700'
+    extraspikein:
+      - '--no-dovetail'
+      - '--no-overlap'
+  samtools:
+    chrs:
+      - "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y"
+    qfilter_intermed:
+      - "-q 0"  #      Skip alignments with MAPQ smaller than INT [0].
+      - "-b"    #      Output in the BAM format.
+  picard:
+    mark_duplicates:
+      dedup_control: "true"
+      args:
+        - "ASSUME_SORTED=true"
+        - "VALIDATION_STRINGENCY=LENIENT"
+        - "TMP_DIR=tmp"
+      target:
+        - "REMOVE_DUPLICATES=false"
+      control:
+        - "REMOVE_DUPLICATES=true"
+  bam_to_bed:
+    bedtools: "-bedpe"
+    awk: '"\$1==\$4 && \$6-\$2 < 1000 {print \$0}"'
+    cut:
+      cut_arg: "-f 1,2,6"
+      sort_arg: "-k1,1 -k2,2n -k3,3n"
+  bedgraph:
+    constant: 1000000
+  macs2:
+    extsize: 200
+    q: 0.05
+    extra: ""
+  seacr:
+    signal_threshold: 1.00  # Used with no IgG control
+    stringency: "stringent" # stringent or relaxed
+    normalization: "norm"   # non or norm

@@ -1,0 +1,35 @@
+# The main entry point of your workflow.
+# After configuring, running snakemake -n in a clone of this repository should successfully execute a dry-run of the workflow.
+
+#workdir: "/cluster/projects/mcgahalab/data/mcgahalab/sabelo_irf2/irf2_meta/philips_atac/human"
+workdir: "/cluster/projects/mcgahalab/data/mcgahalab/sabelo_irf2/weiguo_cutandtag"
+#workdir: "/cluster/projects/mcgahalab/data/mcgahalab/sabelo_irf2/irf2_meta/philips_atac/mouse"
+#workdir: "/cluster/projects/mcgahalab/data/mcgahalab/sabelo_irf2/cutandrun_v2"
+#workdir: "/cluster/projects/mcgahalab/data/mcgahalab/downsample_cutandrun"
+#workdir: "/cluster/projects/mcgahalab/data/mcgahalab/nirmin_atac_ifn/results/Cui_2021/atac"
+#workdir: "/cluster/projects/mcgahalab/data/mcgahalab/wt_cutandrun/snakemake/"
+#workdir: "/cluster/home/quever/workflows/initialize/cutandrun/"
+#workdir: "/cluster/home/quever/workflows/cutandrun_snakemake/"
+
+include: "rules/common.smk"
+include: "rules/trim.smk"
+include: "rules/bowtie2.smk"
+include: "rules/preprocess.smk"
+include: "rules/gen_beds.smk"
+include: "rules/other.smk"
+include: "rules/peakcalling.smk"
+
+rule all:
+  input:
+    expand("results/trim/trimgalore/{sid}.1_val_1.fq.gz", sid=["_".join(i) for i in units.index]),
+    expand("results/trim/trimgalore/{sid}.2_val_2.fq.gz", sid=["_".join(i) for i in units.index]),
+    expand("results/alignment/spikein/{sid}.spikein.bam", sid=["_".join(i) for i in units.index]),
+    expand("results/alignment/bam/{sid}.bam", sid=["_".join(i) for i in units.index]),
+    expand("results/alignment/dedup/{sid}.bam", sid=["_".join(i) for i in units.index]),
+    expand("results/alignment/bed/{sid}.bedGraph", sid=["_".join(i) for i in units.index]),
+    expand("results/alignment/bed/{sid}.bigWig", sid=["_".join(i) for i in units.index]),
+    expand("results/peaks/seacr/{sid}." + config['params']['seacr']['stringency'] + ".bed", sid=["_".join(i) for i in units.index]),
+    expand("results/peaks/seacr_single/{sid}." + config['params']['seacr']['stringency'] + ".bed", sid=["_".join(i) for i in units.index]),
+#    expand("macs2/broad/{sid}_peaks.broadPeak", sid=["_".join(i) for i in units.index]),
+#    expand("macs2/narrow/{sid}_peaks.narrowPeak", sid=["_".join(i) for i in units.index]),
+#    #'results/peaks/chipseeker/peak_ov.pdf',
