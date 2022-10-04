@@ -1,0 +1,15 @@
+#import numpy as np
+Seurat_AB_seq:
+  samples_metadata: config/samples_metadata.csv
+  conds: config/conditions_of_interest.csv
+  criteria_cutoffs_file: config/Seurat_filtering_criteria_cutoffs.csv
+  cellcycle_genes: /Users/dabdrabb/projects/data/cellcycle.rda
+  org: Mouse # org=Mouse or Human
+  pca_dims:
+    rna: 20
+    adt: 12
+  resolution: 0.3
+  msigdbr_specie: Mus musculus
+
+SCENIC:
+  clust_root_path: /cluster/home/dabdrabb/projects/sabelo/AB_seq_v2/

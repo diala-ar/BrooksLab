@@ -1,0 +1,52 @@
+workdir: "/Users/dabdrabb/projects/sabelo/AB_seq_v2/"
+configfile: 'config/config.yaml'
+
+##### load rules #####
+include: "rules/Seurat_AB_seq.smk"
+include: "rules/GSEA.smk"
+
+
+##### target rules #####
+rule all:
+    input:
+        # Seurat_AB_seq/demultiplex_samples
+        "results/Seurat_AB_seq/tagged_cells_raw_counts.csv",
+        # Seurat_AB_seq/seur_create_multimodal_seurat_object
+        "results/Seurat_AB_seq/Seur_Tum_before_filtering.rds",
+        # Seurat_AB_seq/seur_quality_control_plots (generate QC plots before filtering)
+        expand("results/Seurat_AB_seq/QC_Tum_before_cell_filtering_{plot}.pdf", plot=['hist', 'violon']),
+        # Seurat_AB_seq/seur_filter_cells_n_genes
+        "results/Seurat_AB_seq/Seur_Tum_after_filtering.rds",
+        # Seurat_AB_seq/seur_quality_control_plots (generate QC plots after filtering)
+        expand("results/Seurat_AB_seq/QC_Tum_after_cell_filtering_{plot}.pdf", plot=['hist', 'violon']),
+        # Seurat_AB_seq/seur_remove_doublets_Chord
+        "results/Seurat_AB_seq/Seur_Tum_no_doublets.rds",
+        # Seurat_AB_seq/seur_regress_out_cell_cycle_n_mito_prct
+        "results/Seurat_AB_seq/Seur_Tum_preprocessed_final.rds",
+        "results/Seurat_AB_seq/regressing_out_cell_cycle_n_mito_prct.pdf",
+        # Seurat_AB_seq/`seur_elbow_plots`
+        "results/Seurat_AB_seq/Tum_elbow_plots.pdf",
+        # Seurat_AB_seq/seur_visulalize_umap_n_heatmap_for_one_resol
+        "results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/UMAP_Tum_CD8_split_by_sample.pdf",
+        "results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/heatmap_Tum_CD8_adt_markers.pdf",
+        expand("results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/heatmap_Tum_CD8_top_{x}_up_regulated_rna_markers.pdf", x=[10, 20]),
+        expand("results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/Tum_CD8_{x}_markers.csv", x=['adt', 'rna']),
+        expand("results//Seurat_AB_seq/Tum_CD8_v3/res_0.4/barplot_cluster_percentages.{ext}", ext=['csv', 'pdf']),
+        # Seurat_AB_seq/seur_identify_DEGs
+        "results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/Tum_CD8_DEGs_without_cutoff.csv",
+        "results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/Tum_CD8_DEGs_with_cutoff.csv",
+        # Seurat_AB_seq/seur_identify_DEGs_of_KO_C3_vs_WT_C0
+        "results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/Tum_CD8_DEGs_C3.KO_vs_C0_WT_without_cutoff.csv",
+        "results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/Tum_CD8_DEGs_C3.KO_vs_C0_WT_with_cutoff.csv",
+        "results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/top_40_DEGs_KO.C3_vs_WT.C0_heatmap.pdf",
+        # Seurat_AB_seq/GSEA_KO_C3_vs_WT_C0_of_custom_gs
+        "results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/GSEA/Tum_CD8_KO.C3_vs_WT.C0_custom_genesets_GSEA_plots.pdf",
+        # Seurat_AB_seq/export_seur_data_to_SeqGeq
+        "results/SeqGeq/AB_seq_Tum_CD8_v2/res_0.5/CD8_counts.csv",
+        "results/SeqGeq/AB_seq_Tum_CD8_v2/res_0.5/CD8_norm_counts.csv",
+        "results/SeqGeq/AB_seq_Tum_CD8_v2/res_0.5/CD8_MetaData.csv",
+        # Seurat_AB_seq/seur_visulalize_DEGs
+        "results/Seurat_AB_seq/Tum_CD8_v2/res_0.5/DEGs_volcanoplot.pdf",
+        "results/Seurat_AB_seq/Tum_CD8_v2/res_0.5/DEGs_interactive_volcanoplot.html",
+        "results/Seurat_AB_seq/Tum_CD8_v2/res_0.5/DE_ISGs_Interferome_DB_heatmap.pdf",
+        "results/Seurat_AB_seq/Tum_CD8_v2/res_0.5/selected_genes_tiles.pdf",
