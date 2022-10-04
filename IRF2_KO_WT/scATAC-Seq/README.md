@@ -2,7 +2,7 @@
 
 
 ## About
-Analyses of the scATAC-Seq of:
+Analyses of the scATAC-Seq data of:
 1. IRF2 knockout in CD8 T cells (CD8_cre_pos) vs WT (CD8_cre_neg)
 2. IRF2 knockout vs wild type tumour cells (IRF2_KO vs WT).
 
@@ -15,7 +15,7 @@ Those files are compressed as a tar.gz file and submitted to GEO (Accession numb
 
 ## Code description
 Code should be run in the order in which it was numbered
-* '01_preprocess_scATAC-seq.R': Read in peaks data, perform quality control to filter out poor-quality cells and doublets, integrate Cre samples apart and KO and WT apart, annotate cell types using geneactivity,
+* `01_preprocess_scATAC-seq.R`: Read in peaks data, perform quality control to filter out poor-quality cells and doublets, integrate Cre samples apart and KO and WT apart, annotate cell types using geneactivity,
 and finally remove non-CD8 T cells
-* '02_cluster_n_da_peaks.R': cluster cells by peaks counts called using MACS2 and identify peaks differentially accessible between CD8_cre_pos vs CD8_cre_neg and IRF2_KO vs WT.
-* '03_genes_with_IRF2_peaks.R': Identify IRF2 motifs accessible in genes promoter of the mouse genome.
+* `02_cluster_n_da_peaks.R`: cluster cells by peaks counts called using MACS2 and identify peaks differentially accessible between CD8_cre_pos vs CD8_cre_neg and IRF2_KO vs WT.
+* `03_genes_with_IRF2_peaks.R`: Identify IRF2 motifs accessible in genes promoter of the mouse genome.
