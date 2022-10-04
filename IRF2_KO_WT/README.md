@@ -1,4 +1,4 @@
-# BrooksLab
+# Analyses of IRF2 Knockout vs wild type in mouse tumour cells  
 
 
 ## About
