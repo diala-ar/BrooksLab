@@ -11,6 +11,7 @@ The below files are needed to create the seurat object:
 * peaks.bed
 * singlecell.csv
 * fragments.tsv.gz
+
 Those files are compressed as a tar.gz file and submitted to GEO (Accession number GSE199177).
 
 ## Code description
