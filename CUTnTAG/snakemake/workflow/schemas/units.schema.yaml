@@ -1,0 +1,28 @@
+$schema: "http://json-schema.org/draft-04/schema#"
+description: row of the units.tsv, representing a sequencing unit, i.e. single-end or paired-end data
+type: object
+properties:
+  sample:
+    type: string
+    description: sample name/id the unit has been sequenced from
+  celltype:
+    type: string
+    description: celltype id
+  ab:
+    type: string
+    description: antibody
+  fq1:
+    type: string
+    description: path to FASTQ file
+  fq2:
+    type: string
+    description: path to second FASTQ file (leave empty in case of single-end)
+  platform:
+    type: string
+    description: Sequencer platform
+required:
+  - sample
+  - celltype
+  - ab
+  - fq1
+  - fq2

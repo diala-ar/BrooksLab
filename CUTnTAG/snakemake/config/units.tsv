@@ -1,0 +1,3 @@
+sample	celltype	ab	control	isControl	fq1	fq2	library	platform
+AC	uF	IgG		Y	data/AC_uF_IgG.1.fastq.gz	data/AC_uF_IgG.2.fastq.gz	LIBRARYID	ILLUMINA
+AC	uF	IRF2-44	AC_uF_IgG	N	data/AC_uF_IRF2-44.1.fastq.gz	data/AC_uF_IRF2-44.2.fastq.gz	LIBRARYID	ILLUMINA
