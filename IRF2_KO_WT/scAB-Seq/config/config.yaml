@@ -10,6 +10,3 @@ Seurat_AB_seq:
     adt: 12
   resolution: 0.3
   msigdbr_specie: Mus musculus
-
-SCENIC:
-  clust_root_path: /cluster/home/dabdrabb/projects/sabelo/AB_seq_v2/
