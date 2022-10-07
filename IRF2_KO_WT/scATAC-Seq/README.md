@@ -7,12 +7,12 @@ Analyses of the scATAC-Seq data of:
 2. IRF2 knockout vs wild type tumour cells (IRF2_KO vs WT).
 
 ## Prerequisites:
-The below files are needed to create the seurat object:
+The below files are needed to create the seurat objects list `seur_ls':
 * peaks.bed
 * singlecell.csv
 * fragments.tsv.gz
 
-Those files are compressed as a tar.gz file and submitted to GEO (Accession number GSE199177).
+Those files are compressed as a tar.gz file and submitted to the Gene Expression Omnibus (GEO accession number: GSE199177). This seurat objects list will be created in the first script `01_preprocess_scATAC-seq.R`.
 
 ## Code description
 Code should be run in the order in which it was numbered
