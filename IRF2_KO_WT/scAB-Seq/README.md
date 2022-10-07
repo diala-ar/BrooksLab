@@ -25,8 +25,8 @@ To run the snakemake workflow:
   `Rscript -e "devtools::install_github('chris-mcginnis-ucsf/DoubletFinder', dependencies=F)"`
   `Rscript -e "devtools::install_github('aertslab/SCopeLoomR', dependencies=F)"`
   `Rscript -e "devtools::install_github('aertslab/SCENIC', dependencies=F)"`
-  # We updated the Chord package to prevent an error issued while running the scranDB function
-  # We provide the updated version of the Chord package, and you can install it by replacing `chord_path` by the full path of the `BrooksLab-main/IRF2_KO_WT/scAB-Seq/updated_chord_package` folder on your computer.
+  `# We updated the Chord package to prevent an error issued while running the scranDB function`
+  `# We provide the updated version of the Chord package, and you can install it by replacing `chord_path` by the full path of the `BrooksLab-main/IRF2_KO_WT/scAB-Seq/updated_chord_package` folder on your computer.``
   `Rscript -e "install.packages('chord_path', dependencies=F, type='source', repos=NULL)"`
   `conda deactivate`
 9. To continue running the rest of the snakemake workfow, open the file `BrooksLab-main/IRF2_KO_WT/scAB-Seq/workfow/rules/Seurat_AB_seq.smk` and uncomment code from lines 14 to lines 52.
