@@ -21,6 +21,7 @@ To run the snakemake workflow:
 6. change the `condaprefix` variable in the `BrooksLab-main/IRF2_KO_WT/scAB-Seq/run_snakemake.sh` file to the full path of the `BrooksLab-main/IRF2_KO_WT/scAB-Seq/.snakemake/conda/` folder on your computer. This variable contains the path of the created conda environment.
 7. Activate the created conda environment by typing the following in the terminal: `conda activate name_of_created_environment`.
 8. Install some R packages to the created conda environment by running the following in the specified order in the terminal:
+
   `Rscript -e "install.packages('adabag', version=4.2 , repos='https://cloud.r-project.org', dependencies=F)"`
   `Rscript -e "devtools::install_github('chris-mcginnis-ucsf/DoubletFinder', dependencies=F)"`
   `Rscript -e "devtools::install_github('aertslab/SCopeLoomR', dependencies=F)"`
