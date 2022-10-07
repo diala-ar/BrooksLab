@@ -22,14 +22,22 @@ To run the snakemake workflow:
 7. Activate the created conda environment by typing the following in the terminal: `conda activate name_of_created_environment`.
 8. Install some R packages to the created conda environment by running the following in the specified order in the terminal:
 
-  `Rscript -e "install.packages('adabag', version=4.2 , repos='https://cloud.r-project.org', dependencies=F)"`
-  `Rscript -e "devtools::install_github('chris-mcginnis-ucsf/DoubletFinder', dependencies=F)"`
-  `Rscript -e "devtools::install_github('aertslab/SCopeLoomR', dependencies=F)"`
-  `Rscript -e "devtools::install_github('aertslab/SCENIC', dependencies=F)"`
-  `# We updated the Chord package to prevent an error issued while running the scranDB function.`
-  `# We provide the updated version of the Chord package, and you can install it by replacing `chord_path` by the full path of the "BrooksLab-main/IRF2_KO_WT/scAB-Seq/updated_chord_package" folder on your computer.`
-  `Rscript -e "install.packages('chord_path', dependencies=F, type='source', repos=NULL)"`
-  `conda deactivate`
+    `Rscript -e "install.packages('adabag', version=4.2 , repos='https://cloud.r-project.org', dependencies=F)"`
+
+    `Rscript -e "devtools::install_github('chris-mcginnis-ucsf/DoubletFinder', dependencies=F)"`
+
+    `Rscript -e "devtools::install_github('aertslab/SCopeLoomR', dependencies=F)"`
+
+    `Rscript -e "devtools::install_github('aertslab/SCENIC', dependencies=F)"`
+
+    `# We updated the Chord package to prevent an error issued while running the scranDB function.`
+
+    `# We provide the updated version of the Chord package, and you can install it by replacing `chord_path` by the full path of the "BrooksLab-main/IRF2_KO_WT/scAB-Seq/updated_chord_package" folder on your computer.`
+
+    `Rscript -e "install.packages('chord_path', dependencies=F, type='source', repos=NULL)"`
+
+    `conda deactivate`
+    
 9. To continue running the rest of the snakemake workfow, open the file `BrooksLab-main/IRF2_KO_WT/scAB-Seq/workfow/rules/Seurat_AB_seq.smk` and uncomment code from lines 14 to lines 52.
 10. To run the snakemake workflow and generate results, run: `sh run_snakemake.sh`.
 N.B.: In order to make the interactive plots, add the path of pando to the path variable. Add the following to the top of the .zshrc file: `export PATH=$PATH:/Applications/RStudio.app/Contents/MacOS/pandoc`/
