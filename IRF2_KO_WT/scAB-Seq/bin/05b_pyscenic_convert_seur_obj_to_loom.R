@@ -1,4 +1,5 @@
-# generate loom (will be used in arboreto_with_multiprocessing) and tsv files (will be used in aucell)
+# convert RDS files containing seurat objects to loom file which will be used by arboreto_with_multiprocessing
+# generate tsv files that will be used by aucell
 
 library(Seurat)
 library(SCopeLoomR)

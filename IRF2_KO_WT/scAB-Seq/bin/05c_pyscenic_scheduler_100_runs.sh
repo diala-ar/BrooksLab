@@ -39,9 +39,7 @@ for cond in ${conds[@]}; do
 done
 
 
-# to run pyscenic scheduler on the server, run the below
-# slurm
-# int 2
+# to run pyscenic scheduler on the server, log to a computing node on the cluster
 # cd /cluster/projects/mcgahalab/data/brookslab/sabelo/AB_seq_v2/bin/
 # conda activate pyscenic
 # sbatch 05c_pyscenic_scheduler_100_runs.sh
