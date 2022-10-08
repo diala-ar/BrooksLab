@@ -3,8 +3,8 @@
 
 ## About
 Analyses of the scATAC-Seq data of:
-1. IRF2 knockout in CD8 T cells (CD8_cre_pos) vs WT (CD8_cre_neg)
-2. IRF2 knockout vs wild type tumour cells (IRF2_KO vs WT).
+1. IRF2 knocked out only in CD8 T cells (CD8_cre_pos) vs WT cells (CD8_cre_neg) taken from tumors in mouse.
+2. IRF2 knocked out in all cells vs wild type cells (IRF2_KO vs WT) taken from tumours in mouse.
 
 ## Prerequisites:
 The below files are needed to create the seurat objects list `seur_ls':
