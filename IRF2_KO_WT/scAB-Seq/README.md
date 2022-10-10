@@ -43,7 +43,7 @@ mamba install -y -c anaconda cytoolz
 pip3 install pyscenic
 mamba install sklearn
 ```
-2. Run the pySCENIC scripts on a computing node on the cluster in the order listed below. Before running any of the scripts below: 1)change a hard path of the `setwd` function to the path of `/BrooksLab-main/IRF2_KO_WT/scAB-Seq/` folder on your computer in the following files: `05a_pyscenic_prepare_seurat_objects.R` and `05b_pyscenic_convert_seur_obj_to_loom`; 2)make the bin folder your current directory on the cluster using the cd command.
+2. Run the pySCENIC scripts on a computing node on the cluster in the order listed below. Before running any of the scripts below: 1)change the hard path of the `setwd` function to the path of `/BrooksLab-main/IRF2_KO_WT/scAB-Seq/` folder on your computer in the following files: `05a_pyscenic_prepare_seurat_objects.R` and `05b_pyscenic_convert_seur_obj_to_loom`; 2)make the bin folder your current directory on the cluster using the cd command.
 ```
 Rscript 05a_pyscenic_prepare_seurat_objects.R
 Rscript 05b_pyscenic_convert_seur_obj_to_loom.R
