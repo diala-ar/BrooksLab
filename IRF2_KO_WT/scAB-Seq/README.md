@@ -29,7 +29,8 @@ To run the snakemake workflow, follow the below steps:
 ```
 8. Now that the conda environment is created, we can run the rest of the workflow. To do so, open the file `BrooksLab-main/IRF2_KO_WT/scAB-Seq/workfow/rules/Seurat_AB_seq.smk` and uncomment code from lines 14 to lines 52.
 9. To run the snakemake workflow and generate results, run: `sh run_snakemake.sh`.
-N.B.: In order to make the interactive volcano plots, add the path of pando to the path variable. For Mac users, then add the following to the top of the .zshrc file: `export PATH=$PATH:/Applications/RStudio.app/Contents/MacOS/pandoc`/
+
+**N.B.:** In order to make the interactive volcano plots, add the path of pando to the path variable. For Mac users, then add the following to the top of the .zshrc file: `export PATH=$PATH:/Applications/RStudio.app/Contents/MacOS/pandoc`/
 
 ### How to run the pySCENIC code
 Scripts that will reproduce pySCENIC results needs to be run on a cluster.
