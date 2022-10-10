@@ -6,9 +6,7 @@ library(pheatmap)
 library(msigdbr)
 library(fgsea)
 
-source('~/projects/bin/functions/heatmaps.R')
-
-setwd('~/projects/sabelo/AB_seq_v2/')
+source(snakemake@input[['sc_heatmap_function']])
 
 
 seur       = readRDS(snakemake@input[['seur']])

@@ -5,7 +5,7 @@ library(Seurat)
 library(SCopeLoomR)
 library(SCENIC)
 
-setwd('~/projects/sabelo/AB_seq_v2/')
+setwd('/BrooksLab-main/IRF2_KO_WT/scAB-Seq/')
 system('mkdir -vp results/Seurat_AB_seq/Tum_CD8_v3/res_0.4/pyscenic_100_runs')
 
 convert_seur_to_loom = function(seur_obj, file_name) {

@@ -2,7 +2,7 @@
 # 1. Rename some meta_data columns to prepare data for pyscenic analyses
 # 2. Subset data to include only clusters of interest (cluster 3 from KO cells and cluster 0 from WT cells)
 
-setwd('~/projects/sabelo/AB_seq_v2/')
+setwd('/BrooksLab-main/IRF2_KO_WT/scAB-Seq/')
 library(Seurat)
 
 seur  = readRDS("results/Seurat_AB_seq/Tum_CD8_v3/Seur_Tum_CD8_clustered.rds")

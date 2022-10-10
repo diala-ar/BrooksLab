@@ -3,7 +3,7 @@ Seurat_AB_seq:
   samples_metadata: config/samples_metadata.csv
   conds: config/conditions_of_interest.csv
   criteria_cutoffs_file: config/Seurat_filtering_criteria_cutoffs.csv
-  cellcycle_genes: /Users/dabdrabb/projects/data/cellcycle.rda
+  cellcycle_genes: resources/cellcycle.rda
   org: Mouse # org=Mouse or Human
   pca_dims:
     rna: 20

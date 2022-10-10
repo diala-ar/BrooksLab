@@ -1,24 +1,11 @@
 #from snakemake.utils import R
 import numpy as np
 
-rule demultiplex_samples:
-    input:
-        ncounts_file="resources/seven_bridges/Combined_LUK15635_Tumor_and_draining_lymph_node_WT_vs_IRF2KO_RSEC_MolsPerCell.csv",
-        tags_file="resources/seven_bridges/LUK15635_Tumor_and_draining_lymph_node_WT_vs_IRF2KO_Sample_Tag_Calls.csv",
-    output:
-        tagged_raw_counts="results/Seurat_AB_seq/Tum/tagged_cells_raw_counts.csv",
-    params:
-        samples_metadata=config['Seurat_AB_seq']['samples_metadata']
-    conda:
-        '../envs/Seurat_AB_seq.yaml'
-    script:
-        "../scripts/demultiplex_samples.R"
-
 
 # perform subsequent analyses on Tumor cells only
 rule seur_create_multimodal_seurat_object:
     input:
-        raw_counts="results/Seurat_AB_seq/tagged_cells_raw_counts.csv"
+        raw_counts="resources/Seurat_AB_seq/tagged_cells_raw_counts.csv"
     output:
         seur="results/Seurat_AB_seq/Seur_Tum_before_filtering.rds"
     params:
@@ -255,6 +242,7 @@ rule seur_identify_DEGs:
 rule seur_identify_DEGs_of_KO_C3_vs_WT_C0:
     input:
         seur="results/Seurat_AB_seq/Tum_CD8_v3/Seur_Tum_CD8_clustered.rds",
+        sc_heatmap_function='../../bin/sc_heatmap_function.R'
     output:
         degs_without_cutoff="results/Seurat_AB_seq/Tum_CD8_v3/res_{resol}/Tum_CD8_DEGs_C3.KO_vs_C0_WT_without_cutoff.csv",
         degs_with_cutoff="results/Seurat_AB_seq/Tum_CD8_v3/res_{resol}/Tum_CD8_DEGs_C3.KO_vs_C0_WT_with_cutoff.csv",
