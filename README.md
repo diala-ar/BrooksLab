@@ -3,7 +3,7 @@
 
 
 ## About
-This repository provides a list of the projects that were studied in the BrooksLab. Projects are organized in folders containing the code that was used and instructions on how to reproduce each project results.
+This repository provides a list of the projects studied in the Brooks lab. Projects are organized in folders containing instructions and the code used to reproduce each project's results.
 
 ## Projects
 [IRF2_KO_WT](https://github.com/diala-ar/BrooksLab/tree/main/IRF2_KO_WT).
