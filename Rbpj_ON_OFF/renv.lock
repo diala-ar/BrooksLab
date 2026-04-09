@@ -598,45 +598,6 @@
       ],
       "Hash": "963ab8fbaf980a5b081ed40419081439"
     },
-    "R.methodsS3": {
-      "Package": "R.methodsS3",
-      "Version": "1.8.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "utils"
-      ],
-      "Hash": "278c286fd6e9e75d0c2e8f731ea445c8"
-    },
-    "R.oo": {
-      "Package": "R.oo",
-      "Version": "1.25.0",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "R.methodsS3",
-        "methods",
-        "utils"
-      ],
-      "Hash": "a0900a114f4f0194cf4aa8cd4a700681"
-    },
-    "R.utils": {
-      "Package": "R.utils",
-      "Version": "2.12.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "R.methodsS3",
-        "R.oo",
-        "methods",
-        "tools",
-        "utils"
-      ],
-      "Hash": "325f01db13da12c04d8f6e7be36ff514"
-    },
     "R6": {
       "Package": "R6",
       "Version": "2.5.1",
@@ -893,26 +854,6 @@
         "utils"
       ],
       "Hash": "6c32f79472b8e0607750dc76885f8a4b"
-    },
-    "STACAS": {
-      "Package": "STACAS",
-      "Version": "2.0.5",
-      "Source": "GitHub",
-      "RemoteType": "github",
-      "RemoteHost": "api.github.com",
-      "RemoteUsername": "carmonalab",
-      "RemoteRepo": "STACAS",
-      "RemoteRef": "master",
-      "RemoteSha": "5277f013b9368ba04acbb11097db2e79b40bce7f",
-      "Requirements": [
-        "R",
-        "R.utils",
-        "Seurat",
-        "ggplot2",
-        "ggridges",
-        "pbapply"
-      ],
-      "Hash": "b5a202e1dae50d692a31279681e83417"
     },
     "ScaledMatrix": {
       "Package": "ScaledMatrix",
@@ -2352,27 +2293,6 @@
       ],
       "Hash": "75437dd4c43599f6e9418ea249495fda"
     },
-    "gprofiler2": {
-      "Package": "gprofiler2",
-      "Version": "0.2.1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "R",
-        "RCurl",
-        "crosstalk",
-        "dplyr",
-        "ggplot2",
-        "grDevices",
-        "grid",
-        "gridExtra",
-        "jsonlite",
-        "plotly",
-        "tidyr",
-        "viridisLite"
-      ],
-      "Hash": "3b0e14c3c1f736b08d5adf9763a074a4"
-    },
     "graph": {
       "Package": "graph",
       "Version": "1.76.0",
@@ -2454,28 +2374,6 @@
         "utils"
       ],
       "Hash": "88bb96eaf7140cdf29e374ef74182220"
-    },
-    "harmony": {
-      "Package": "harmony",
-      "Version": "0.1.1",
-      "Source": "Repository",
-      "Repository": "RSPM",
-      "Requirements": [
-        "Matrix",
-        "R",
-        "Rcpp",
-        "RcppArmadillo",
-        "RcppProgress",
-        "cowplot",
-        "dplyr",
-        "ggplot2",
-        "irlba",
-        "methods",
-        "rlang",
-        "tibble",
-        "tidyr"
-      ],
-      "Hash": "0c5a19c351e5ce6b053b852cb88c312a"
     },
     "hash": {
       "Package": "hash",
