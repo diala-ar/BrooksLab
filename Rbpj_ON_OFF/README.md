@@ -1,6 +1,6 @@
 # Rbpj_ON_OFF project
 
-RBPJ-dependent Notch signaling initiates enduring CX3CR1high effector CD8 T cell memory in lieu of stem-like and tissue-resident programs
+##RBPJ-dependent Notch signaling initiates enduring CX3CR1high effector CD8 T cell memory in lieu of stem-like and tissue-resident programs.
 Siamak Haddadi, Diala Abd-Rabbo, Christina R. Lee, David G. Brooks, Michele K. Anderson, and Juan Carlos Zúñiga-Pflücker
 
 ## Abstract
